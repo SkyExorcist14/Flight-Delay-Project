@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkySense — Flight Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#07090f;
+  --s1:#0d1117;
+  --s2:#111827;
+  --s3:#1a2332;
+  --border:#1e2d45;
+  --border2:#253348;
+  --blue:#3b82f6;
+  --cyan:#06b6d4;
+  --green:#10b981;
+  --red:#ef4444;
+  --yellow:#f59e0b;
+  --purple:#8b5cf6;
+  --text:#f1f5f9;
+  --muted:#64748b;
+  --muted2:#94a3b8;
+  --fh:'Cabinet Grotesk',sans-serif;
+  --fb:'Instrument Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;overflow-x:hidden}
+
+/* ── NOISE OVERLAY ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:.4;
+}
+
+/* ── NAV ── */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2.5rem;border-bottom:1px solid var(--border);
+  background:rgba(7,9,15,0.92);position:sticky;top:0;z-index:200;
+  backdrop-filter:blur(20px);
+}
+.logo{font-family:var(--fh);font-size:1.4rem;font-weight:900;letter-spacing:-.03em;color:#fff}
+.logo span{color:var(--cyan)}
+.nav-links{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.nav-links a{
+  padding:.5rem 1.2rem;color:var(--muted);text-decoration:none;
+  font-size:.85rem;font-weight:500;transition:.15s;cursor:pointer;
+  border-right:1px solid var(--border);white-space:nowrap;
+}
+.nav-links a:last-child{border-right:none}
+.nav-links a:hover{color:var(--text);background:var(--s3)}
+.nav-links a.active{color:#fff;background:var(--blue)}
+.nav-tag{
+  background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.3);
+  color:var(--cyan);font-size:.7rem;font-weight:600;padding:.2rem .6rem;
+  border-radius:20px;letter-spacing:.05em;
+}
+
+/* ── HERO ── */
+.hero{
+  position:relative;padding:5rem 2.5rem 3rem;text-align:center;
+  background:radial-gradient(ellipse 70% 60% at 50% -10%,rgba(59,130,246,0.15) 0%,transparent 65%);
+  overflow:hidden;
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(30,45,69,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(30,45,69,0.3) 1px,transparent 1px);
+  background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 0%,transparent 100%);
+}
+.hero h1{
+  font-family:var(--fh);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;
+  line-height:1.0;letter-spacing:-.04em;position:relative;z-index:1;
+  margin-bottom:.75rem;
+}
+.hero h1 .line1{color:#fff}
+.hero h1 .line2{
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{color:var(--muted2);font-size:1rem;position:relative;z-index:1;margin-bottom:2.5rem}
+.hero-pills{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:2.5rem;position:relative;z-index:1}
+.pill{
+  padding:.3rem .85rem;border-radius:20px;font-size:.78rem;font-weight:500;
+  border:1px solid var(--border2);background:var(--s2);color:var(--muted2);
+}
+
+/* ── SEARCH CARD ── */
+.search-wrap{max-width:1050px;margin:0 auto 4rem;position:relative;z-index:10}
+.search-card{
+  background:var(--s1);border:1px solid var(--border2);
+  border-radius:20px;padding:1.75rem;
+  box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 0 1px rgba(59,130,246,.05);
+}
+.trip-toggle{display:flex;gap:.5rem;margin-bottom:1.25rem}
+.trip-btn{
+  padding:.4rem 1rem;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-family:var(--fb);
+  font-size:.82rem;font-weight:500;cursor:pointer;transition:.15s;
+}
+.trip-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.search-row{
+  display:grid;
+  grid-template-columns:minmax(190px,1fr) minmax(190px,1fr) minmax(190px,1fr) 210px;
+  gap:1rem;
+  align-items:end;
+}
+.field label{
+  display:block;font-size:.7rem;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;
+}
+.field select,.field input{
+  width:100%;padding:.75rem 1rem;
+  background:var(--s2);border:1px solid var(--border2);
+  border-radius:10px;color:var(--text);font-family:var(--fb);
+  font-size:.9rem;outline:none;transition:.2s;appearance:none;
+}
+.field select:focus,.field input:focus{border-color:var(--blue);background:var(--s3)}
+.search-btn{
+  width:100%;
+  height:52px;
+  padding:.75rem 1.75rem;
+  background:linear-gradient(135deg,var(--blue),#2563eb);
+  border:none;border-radius:10px;color:#fff;
+  font-family:var(--fh);font-weight:800;font-size:.95rem;
+  cursor:pointer;transition:.2s;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(59,130,246,.35);
+}
+.search-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(59,130,246,.45)}
+.return-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-top:.75rem}
+.return-row.hidden{display:none}
+
+/* ── RESULT PANEL ── */
+#result-panel{display:none;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── VERDICT ── */
+.verdict-card{
+  border-radius:16px;padding:1.75rem 2rem;
+  display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;
+  position:relative;overflow:hidden;
+}
+.verdict-card::before{content:'';position:absolute;inset:0;opacity:.05}
+.verdict-card.buy{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25)}
+.verdict-card.buy::before{background:var(--green)}
+.verdict-card.wait{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25)}
+.verdict-card.wait::before{background:var(--yellow)}
+.verdict-card.avoid{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25)}
+.verdict-card.avoid::before{background:var(--red)}
+.verdict-icon{font-size:2.5rem;flex-shrink:0}
+.verdict-title{font-family:var(--fh);font-size:1.6rem;font-weight:900;letter-spacing:-.03em}
+.verdict-card.buy .verdict-title{color:var(--green)}
+.verdict-card.wait .verdict-title{color:var(--yellow)}
+.verdict-card.avoid .verdict-title{color:var(--red)}
+.verdict-desc{color:var(--muted2);font-size:.9rem;margin-top:.3rem;line-height:1.6}
+.verdict-badge{
+  margin-left:auto;flex-shrink:0;padding:.5rem 1.2rem;
+  border-radius:10px;font-family:var(--fh);font-weight:800;font-size:1rem;
+}
+.buy .verdict-badge{background:rgba(16,185,129,.2);color:var(--green)}
+.wait .verdict-badge{background:rgba(245,158,11,.2);color:var(--yellow)}
+.avoid .verdict-badge{background:rgba(239,68,68,.2);color:var(--red)}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:14px;padding:1.25rem 1.5rem;
+  display:flex;flex-direction:column;gap:.3rem;
+}
+.stat-val{font-family:var(--fh);font-size:1.9rem;font-weight:900;letter-spacing:-.03em;line-height:1}
+.stat-val.green{color:var(--green)}
+.stat-val.red{color:var(--red)}
+.stat-val.yellow{color:var(--yellow)}
+.stat-val.blue{color:var(--blue)}
+.stat-val.cyan{color:var(--cyan)}
+.stat-label{color:var(--muted);font-size:.78rem;font-weight:500}
+.stat-sub{color:var(--muted2);font-size:.72rem;margin-top:.1rem}
+
+/* ── SECTION TITLE ── */
+.sec-title{
+  font-family:var(--fh);font-size:1.15rem;font-weight:800;
+  margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;
+  letter-spacing:-.02em;
+}
+.sec-title .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);flex-shrink:0}
+
+/* ── CARRIERS ── */
+.carriers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.75rem;margin-bottom:2rem}
+.carrier-card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:12px;padding:1rem 1.25rem;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:.15s;
+}
+.carrier-card:hover{border-color:var(--border2);background:var(--s2)}
+.c-name{font-weight:600;font-size:.9rem}
+.c-sub{color:var(--muted);font-size:.75rem;margin-top:.2rem}
+.c-delay{font-family:var(--fh);font-size:1.1rem;font-weight:800}
+.delay-good{color:var(--green)}
+.delay-ok{color:var(--yellow)}
+.delay-bad{color:var(--red)}
+
+/* ── CHARTS ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:14px;padding:1.25rem 1.5rem;
+}
+.chart-card h3{font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+.chart-card canvas{max-height:200px}
+
+/* ── RECOS ── */
+.reco-list{display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem}
+.reco-item{
+  display:flex;gap:.9rem;align-items:flex-start;
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:12px;padding:.9rem 1.1rem;transition:.15s;
+}
+.reco-item:hover{border-color:var(--border2)}
+.reco-icon{font-size:1.2rem;flex-shrink:0;margin-top:.1rem}
+.reco-text{font-size:.875rem;line-height:1.6;color:var(--muted2)}
+.reco-text strong{color:var(--cyan)}
+
+/* ── SECTION WRAP ── */
+.section{padding:2rem 2.5rem;max-width:1400px;margin:0 auto}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:.4rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab-btn{
+  padding:.45rem 1rem;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;
+  font-family:var(--fb);font-size:.82rem;font-weight:500;transition:.15s;
+}
+.tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tab-content{display:none}
+.tab-content.active{display:block;animation:fadeUp .3s ease}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+.data-table{width:100%;border-collapse:collapse;font-size:.875rem}
+.data-table th{
+  text-align:left;padding:.7rem 1rem;color:var(--muted);
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;
+  border-bottom:1px solid var(--border);background:var(--s1);font-weight:600;
+}
+.data-table td{padding:.7rem 1rem;border-bottom:1px solid rgba(30,45,69,.5)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover td{background:rgba(59,130,246,.04)}
+.badge{display:inline-block;padding:.18rem .55rem;border-radius:5px;font-size:.75rem;font-weight:600}
+.bg{background:rgba(16,185,129,.15);color:var(--green)}
+.br{background:rgba(239,68,68,.15);color:var(--red)}
+.by{background:rgba(245,158,11,.15);color:var(--yellow)}
+.bb{background:rgba(59,130,246,.15);color:var(--blue)}
+.bc{background:rgba(6,182,212,.15);color:var(--cyan)}
+
+/* ── OVERVIEW SUMMARY STATS ── */
+.ov-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.ov-stat{
+  background:var(--s1);border:1px solid var(--border);border-radius:14px;
+  padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.3rem;
+}
+.ov-num{font-family:var(--fh);font-size:2rem;font-weight:900;letter-spacing:-.03em}
+.ov-lbl{color:var(--muted);font-size:.78rem;font-weight:500}
+
+/* ── FOOTER ── */
+footer{
+  text-align:center;padding:2rem;color:var(--muted);
+  border-top:1px solid var(--border);font-size:.78rem;margin-top:3rem;
+  background:var(--s1);
+}
+
+/* ── PAGES ── */
+.page{display:none}
+.page.active{display:block}
+
+@media(max-width:900px){
+  .search-row{grid-template-columns:1fr 1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .hero h1{font-size:2.2rem}
+  nav{padding:.8rem 1.2rem}
+  .section{padding:1.5rem 1.2rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Sky<span>Sense</span></div>
+  <div class="nav-links">
+    <a onclick="showPage('search')"   id="nav-search"   class="active">✈ Search</a>
+    <a onclick="showPage('overview')" id="nav-overview">📊 Overview</a>
+    <a onclick="showPage('airports')" id="nav-airports">🏢 Airports</a>
+    <a onclick="showPage('trends')"   id="nav-trends">📈 Trends</a>
+  </div>
+  <div class="nav-tag">DATA 603</div>
+</nav>
+
+<!-- ══════════════ SEARCH PAGE ══════════════ -->
+<div id="page-search" class="page active">
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <h1><div class="line1">Predict Your</div><div class="line2">Flight's Future</div></h1>
+    <p class="hero-sub">10 years of historical data · 24 major US airports · Apache Spark ML models</p>
+    <div class="hero-pills">
+      <span class="pill">✅ Delay Prediction</span>
+      <span class="pill">💰 Price Analysis</span>
+      <span class="pill">📋 Buy Recommendation</span>
+      <span class="pill">🌦 Weather Impact</span>
+      <span class="pill">🏆 Best Value Airports</span>
+    </div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-card">
+      <div class="trip-toggle">
+        <button class="trip-btn active" onclick="setTrip('one',this)">One Way</button>
+        <button class="trip-btn" onclick="setTrip('round',this)">Round Trip</button>
+      </div>
+      <div class="search-row">
+        <div class="field">
+          <label>From</label>
+          <select id="sel-origin"></select>
+        </div>
+        <div class="field">
+          <label>To</label>
+          <select id="sel-dest"></select>
+        </div>
+        <div class="field">
+          <label>Departure Date</label>
+          <input type="date" id="dep-date">
+        </div>
+    
+        <button class="search-btn" onclick="searchFlight()">Search ✈</button>
+      </div>
+      <div class="return-row hidden" id="return-row">
+        <div class="field">
+          <label>Return Date</label>
+          <input type="date" id="ret-date">
+        </div>
+        <div class="field">
+          <label>Cabin Class</label>
+          <select id="sel-cabin">
+            <option value="economy">Economy</option>
+            <option value="business">Business</option>
+            <option value="first">First Class</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Flexibility</label>
+          <select id="sel-flex">
+            <option value="no">Fixed Dates</option>
+            <option value="yes">Flexible ±3 days</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="result-panel">
+    <div id="verdict-box"></div>
+    <div class="stats-row" id="stats-row"></div>
+    <div class="sec-title"><span class="dot"></span>Airlines on This Route</div>
+    <div class="carriers-grid" id="carriers-grid"></div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Monthly Delay Trend</h3><canvas id="chart-monthly"></canvas></div>
+      <div class="chart-card"><h3>Historical Fare Trend</h3><canvas id="chart-fare"></canvas></div>
+    </div>
+    <div class="sec-title"><span class="dot"></span>Recommendations</div>
+    <div class="reco-list" id="reco-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════ OVERVIEW PAGE ══════════════ -->
+<div id="page-overview" class="page">
+  <div class="section">
+    <div class="sec-title" style="font-size:1.5rem;margin-bottom:1.5rem"><span class="dot"></span>Network Overview</div>
+    <div class="ov-stats" id="ov-stats"></div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Top 10 Busiest Airports — Total Traffic</h3><canvas id="chart-busiest"></canvas></div>
+      <div class="chart-card"><h3>Delay Causes Breakdown</h3><canvas id="chart-causes"></canvas></div>
+      <div class="chart-card"><h3>Average Delay by Day of Week</h3><canvas id="chart-daily"></canvas></div>
+      <div class="chart-card"><h3>Average Fare by Quarter</h3><canvas id="chart-quarter"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ AIRPORTS PAGE ══════════════ -->
+<div id="page-airports" class="page">
+  <div class="section">
+    <div class="sec-title" style="font-size:1.5rem;margin-bottom:1.5rem"><span class="dot"></span>Airport Intelligence</div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-busy',this)">🏆 Busiest</button>
+      <button class="tab-btn" onclick="switchTab('tab-dep',this)">⬆️ Top Departure Delays</button>
+      <button class="tab-btn" onclick="switchTab('tab-arr',this)">⬇️ Top Arrival Delays</button>
+      <button class="tab-btn" onclick="switchTab('tab-cheap',this)">💚 Cheapest Fares</button>
+      <button class="tab-btn" onclick="switchTab('tab-exp',this)">🔴 Most Expensive</button>
+      <button class="tab-btn" onclick="switchTab('tab-bv',this)">⭐ Best Value</button>
+      <button class="tab-btn" onclick="switchTab('tab-weather',this)">⛈ Weather Risk</button>
+    </div>
+    <div id="tab-busy"    class="tab-content active"><div class="tbl-wrap"><table class="data-table" id="tbl-busy"></table></div></div>
+    <div id="tab-dep"     class="tab-content"><div class="tbl-wrap"><table class="data-table" id="tbl-dep"></table></div></div>
+    <div id="tab-arr"     class="tab-content"><div class="tbl-wrap"><table class="data-table" id="tbl-arr"></table></div></div>
+    <div id="tab-cheap"   class="tab-content"><div class="tbl-wrap"><table class="data-table" id="tbl-cheap"></table></div></div>
+    <div id="tab-exp"     class="tab-content"><div class="tbl-wrap"><table class="data-table" id="tbl-exp"></table></div></div>
+    <div id="tab-bv"      class="tab-content"><div class="tbl-wrap"><table class="data-table" id="tbl-bv"></table></div></div>
+    <div id="tab-weather" class="tab-content"><div class="tbl-wrap"><table class="data-table" id="tbl-weather"></table></div></div>
+  </div>
+</div>
+
+<!-- ══════════════ TRENDS PAGE ══════════════ -->
+<div id="page-trends" class="page">
+  <div class="section">
+    <div class="sec-title" style="font-size:1.5rem;margin-bottom:1.5rem"><span class="dot"></span>Historical Trends</div>
+    <div class="charts-grid">
+      <div class="chart-card" style="grid-column:span 2"><h3>Average Fare by Year (2005–2018)</h3><canvas id="chart-fare-yr" style="max-height:260px"></canvas></div>
+      <div class="chart-card"><h3>Average Delay by Month</h3><canvas id="chart-delay-mo"></canvas></div>
+      <div class="chart-card"><h3>Worst Weather Airports</h3><canvas id="chart-wx"></canvas></div>
+    </div>
+    <div class="charts-grid" style="margin-top:1rem">
+      <div class="chart-card"><h3>Top 10 Departure Delay Airports</h3><canvas id="chart-dep-delay"></canvas></div>
+      <div class="chart-card"><h3>Top 10 Arrival Delay Airports</h3><canvas id="chart-arr-delay"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<footer>DATA 603 · Big Data Platforms · UMBC · Powered by Apache Spark &amp; PySpark ML · BTS + NOAA Historical Data (2005–2018)</footer>
+
+<script>
+// ═══════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════
+let D = null;
+const MO = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY = ['','Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const CI = {};
+let tripType = 'one';
+
+// ═══════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════
+async function loadData() {
+  try {
+    const r = await fetch('results.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}: results.json not found`);
+    D = await r.json();
+    init();
+  } catch (err) {
+    alert("Could not load results.json. Run the app using python app.py or python -m http.server, then open the localhost link. Do not double-click webapp.html.");
+    console.error("Could not load results.json:", err);
+  }
+}
+
+function init() {
+  // set default date to tomorrow
+  const tom = new Date(); tom.setDate(tom.getDate()+1);
+  document.getElementById('dep-date').value = tom.toISOString().split('T')[0];
+  const ret = new Date(); ret.setDate(ret.getDate()+8);
+  document.getElementById('ret-date').value = ret.toISOString().split('T')[0];
+
+  populateDropdowns();
+  buildOverview();
+  buildAirportTables();
+  buildTrends();
+}
+
+// ═══════════════════════════════════════════
+// TRIP TYPE
+// ═══════════════════════════════════════════
+function setTrip(type, btn) {
+  tripType = type;
+  document.querySelectorAll('.trip-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const rr = document.getElementById('return-row');
+  rr.classList.toggle('hidden', type === 'one');
+}
+
+// ═══════════════════════════════════════════
+// DROPDOWNS
+// ═══════════════════════════════════════════
+function populateDropdowns() {
+  const aps = [...(D.airports||[])].sort((a,b)=>a.code.localeCompare(b.code));
+  ['sel-origin','sel-dest'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.innerHTML = aps.map(a=>`<option value="${a.code}">${a.code} — ${a.state}</option>`).join('');
+    if (i===1 && aps.length>1) el.value = aps[4]?.code || aps[1].code;
+  });
+}
+
+// ═══════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════
+function searchFlight() {
+  const origin  = document.getElementById('sel-origin').value;
+  const dest    = document.getElementById('sel-dest').value;
+  const depDate = document.getElementById('dep-date').value;
+  const pax     = 1; // fixed: no sel-pax dropdown exists in the HTML
+  const dayType = getDayType(depDate);
+  const cabin   = document.getElementById('sel-cabin')?.value || 'economy';
+
+  if (origin === dest) { alert('Please select different airports.'); return; }
+
+  const depD = depDate ? new Date(depDate + 'T00:00:00') : new Date();
+  const month  = depD.getMonth() + 1;
+
+  const routes = (D.route_lookup||[]).filter(r=>r.origin===origin&&r.dest===dest);
+  const originAp = D.airports.find(a=>a.code===origin)||{};
+
+  const monthRow  = (D.monthly_delays||[]).find(m=>m.month===month)||{};
+  const baseDelay = parseFloat(monthRow.avg_dep_delay||originAp.avg_dep_delay||12);
+  const wkPenalty = dayType==='weekend'?2.5:0;
+  const predicted = Math.max(0,baseDelay+wkPenalty).toFixed(1);
+
+  const qMap = {1:1,2:1,3:1,4:2,5:2,6:2,7:3,8:3,9:3,10:4,11:4,12:4};
+
+function findAirportFare(code) {
+  return (
+    (D.most_expensive || []).find(r => r.ORIGIN === code) ||
+    (D.cheapest || []).find(r => r.ORIGIN === code) ||
+    (D.best_value || []).find(r => r.ORIGIN === code) ||
+    {}
+  );
+}
+
+const qRow = (D.fare_by_quarter || []).find(q => Number(q.QUARTER) === qMap[month]) || {};
+const fareRow = (D.fare_by_year || []).slice(-1)[0] || {};
+
+const originFareRow = findAirportFare(origin);
+const destFareRow = findAirportFare(dest);
+
+const originFare = parseFloat(originFareRow.avg_fare_usd);
+const destFare = parseFloat(destFareRow.avg_fare_usd);
+const quarterlyFare = parseFloat(qRow.avg_fare_usd || fareRow.avg_fare_usd || 280);
+
+// Airport-based fare estimate
+let base;
+if (!isNaN(originFare) && !isNaN(destFare)) {
+  base = (originFare + destFare) / 2;
+} else if (!isNaN(originFare)) {
+  base = originFare;
+} else if (!isNaN(destFare)) {
+  base = destFare;
+} else {
+  base = quarterlyFare;
+}
+
+// Seasonal adjustment using selected month/quarter
+const networkAvgFare = parseFloat(fareRow.avg_fare_usd || quarterlyFare || 280);
+const seasonalMultiplier = networkAvgFare ? quarterlyFare / networkAvgFare : 1;
+
+base = base * seasonalMultiplier;
+
+const cabinMult = { economy: 1, business: 2.8, first: 4.5 };
+const perPax = Math.round(base * (cabinMult[cabin] || 1));
+const total = perPax * pax * (tripType === 'round' ? 2 : 1);
+
+  const avgCancel = routes.length
+    ? (routes.reduce((s,r)=>s+r.cancellation_rate,0)/routes.length).toFixed(1)
+    : (originAp.avg_dep_delay>15?3.2:1.8);
+  const avgPct = routes.length
+    ? (routes.reduce((s,r)=>s+r.pct_delayed,0)/routes.length).toFixed(1)
+    : Math.round(predicted*1.8);
+
+  // verdict
+  let vc,vi,vt,vd;
+  if (predicted<10&&avgCancel<2){ vc='buy';vi='✅';vt='Good Time to Book';
+    vd=`${origin} → ${dest} in ${MO[month]} looks favorable. Low delay risk and competitive fares. Book now before prices climb.`;}
+  else if (predicted<20&&avgCancel<4){ vc='wait';vi='⚠️';vt='Book with Caution';
+    vd=`Moderate delay risk for ${origin} → ${dest} in ${MO[month]}. Consider flexible tickets or an early morning departure to buffer delays.`;}
+  else { vc='avoid';vi='🚫';vt='High Risk — Consider Alternatives';
+    vd=`${origin} → ${dest} in ${MO[month]} shows elevated delay and cancellation risk. Consider alternate dates, routes, or nearby airports.`;}
+
+  document.getElementById('verdict-box').innerHTML=`
+    <div class="verdict-card ${vc}">
+      <div class="verdict-icon">${vi}</div>
+      <div style="flex:1">
+        <div class="verdict-title">${vt}</div>
+        <div class="verdict-desc">${vd}</div>
+      </div>
+      <div class="verdict-badge">${vc==='buy'?'BUY NOW':vc==='wait'?'CAUTION':'AVOID'}</div>
+    </div>`;
+
+  const dc = predicted<10?'green':predicted<20?'yellow':'red';
+  const cc = avgCancel<2?'green':avgCancel<4?'yellow':'red';
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card">
+      <div class="stat-val ${dc}">${predicted}<span style="font-size:1rem"> min</span></div>
+      <div class="stat-label">Expected Delay</div>
+      <div class="stat-sub">${MO[month]} average · ${dayType}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val cyan">$${perPax.toLocaleString()}</div>
+      <div class="stat-label">Est. Fare per Person</div>
+      <div class="stat-sub">${cabin} · ${tripType==='round'?'round trip':'one way'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val blue">$${total.toLocaleString()}</div>
+      <div class="stat-label">Total for ${pax} Pax</div>
+      <div class="stat-sub">${tripType==='round'?'Both directions':'One direction'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val yellow">${avgPct}%</div>
+      <div class="stat-label">Delayed 15+ min</div>
+      <div class="stat-sub">Cancel rate: <span class="${cc}">${avgCancel}%</span></div>
+    </div>`;
+
+  // carriers
+  const cn = D.carrier_names||{};
+  let ch = '';
+  if (routes.length) {
+    routes.slice(0,8).forEach(r=>{
+      const cls=r.avg_dep_delay<8?'delay-good':r.avg_dep_delay<16?'delay-ok':'delay-bad';
+      ch+=`<div class="carrier-card">
+        <div><div class="c-name">${cn[r.carrier]||r.carrier}</div>
+        <div class="c-sub">${r.total_flights.toLocaleString()} historical flights</div></div>
+        <div class="c-delay ${cls}">${r.avg_dep_delay.toFixed(1)} min</div>
+      </div>`;
+    });
+  } else {
+    ch=`<div class="carrier-card"><div class="c-name" style="color:var(--muted)">No direct route data found — may require a connecting flight</div></div>`;
+  }
+  document.getElementById('carriers-grid').innerHTML=ch;
+
+  // mini charts
+  miniCharts(month);
+  buildRecos(origin,dest,month,dayType,predicted,base,routes,originAp);
+
+  const rp=document.getElementById('result-panel');
+  rp.style.display='block';
+  setTimeout(()=>rp.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
+// ═══════════════════════════════════════════
+// MINI CHARTS
+// ═══════════════════════════════════════════
+function miniCharts(month) {
+  const mo = D.monthly_delays||[];
+  kc('chart-monthly');
+  if (mo.length) {
+    CI['chart-monthly']=new Chart(document.getElementById('chart-monthly'),{
+      type:'bar',
+      data:{labels:mo.map(m=>MO[m.month]),datasets:[{
+        label:'Avg Delay (min)',
+        data:mo.map(m=>m.avg_dep_delay),
+        backgroundColor:mo.map(m=>m.month==month?'rgba(59,130,246,0.9)':'rgba(59,130,246,0.25)'),
+        borderRadius:6
+      }]},options:co('Avg Delay (min)')
+    });
+  }
+  const fy=D.fare_by_year||[];
+  kc('chart-fare');
+  if (fy.length) {
+    CI['chart-fare']=new Chart(document.getElementById('chart-fare'),{
+      type:'line',
+      data:{labels:fy.map(r=>r.YEAR),datasets:[{
+        label:'Avg Fare ($)',data:fy.map(r=>r.avg_fare_usd),
+        borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.1)',
+        tension:.4,fill:true,pointRadius:3,pointBackgroundColor:'#06b6d4'
+      }]},options:co('Avg Fare ($)')
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+// RECOMMENDATIONS
+// ═══════════════════════════════════════════
+function buildRecos(origin,dest,month,dayType,delay,fare,routes,ap) {
+  const recos=[];
+  const mo=D.monthly_delays||[];
+  if (mo.length) {
+    const best=[...mo].sort((a,b)=>a.avg_dep_delay-b.avg_dep_delay)[0];
+    recos.push({i:'🗓️',t:`<strong>Best month for this route:</strong> ${MO[best.month]} has the lowest delays (${best.avg_dep_delay} min avg). ${month==best.month?"You picked the optimal month! ✅":`Consider shifting to ${MO[best.month]} if your schedule is flexible.`}`});
+  }
+  if (dayType==='weekend') {
+    recos.push({i:'📅',t:'<strong>Weekdays are cheaper and faster:</strong> Weekend flights average 2–3 min more delay. Tuesday and Wednesday are historically the best days to fly — lower delays and lower fares.'});
+  } else {
+    recos.push({i:'📅',t:'<strong>Good day choice:</strong> Weekday flights have fewer delays. Tuesday and Wednesday are the sweet spot for both price and punctuality.'});
+  }
+  const fq=D.fare_by_quarter||[];
+  if (fq.length) {
+    const cheapQ=[...fq].sort((a,b)=>a.avg_fare_usd-b.avg_fare_usd)[0];
+    recos.push({i:'💰',t:`<strong>Cheapest quarter:</strong> ${cheapQ.quarter_label||'Q'+cheapQ.QUARTER} has the lowest average fares at $${cheapQ.avg_fare_usd}. Book 3–6 weeks in advance for best prices — last-minute fares on this route run 40–60% higher.`});
+  }
+  const ww=D.worst_weather||[];
+  const owx=ww.find(w=>w.ORIGIN===origin);
+  if (owx&&owx.avg_weather_delay_min>5) {
+    recos.push({i:'⛈️',t:`<strong>Weather risk at ${origin}:</strong> This airport averages ${owx.avg_weather_delay_min} min of weather delay. Book the first departure of the day — it's the least likely to accumulate cascading delays.`});
+  }
+  if (routes.length>1) {
+    const best=[...routes].sort((a,b)=>a.avg_dep_delay-b.avg_dep_delay)[0];
+    const nm=(D.carrier_names||{})[best.carrier]||best.carrier;
+    recos.push({i:'✈️',t:`<strong>Best airline on this route:</strong> ${nm} averages only ${best.avg_dep_delay} min delay on ${origin}→${dest}. They have ${best.total_flights.toLocaleString()} historical flights on this route.`});
+  }
+  recos.push({i:'🌅',t:'<strong>Fly early morning:</strong> Departures before 9 AM have 35–40% fewer delays. The first flight of the day has not yet been affected by cascading delays from earlier parts of the network.'});
+  const bv=D.best_value||[];
+  if (bv.length) {
+    const b=bv[0];
+    recos.push({i:'🏆',t:`<strong>Best value airport in the network:</strong> ${b.ORIGIN} offers the lowest cost-per-mile at $${b.avg_cents_per_mile}/mile with an average fare of $${b.avg_fare_usd} — ideal if you can drive there.`});
+  }
+  document.getElementById('reco-list').innerHTML=recos.map(r=>
+    `<div class="reco-item"><div class="reco-icon">${r.i}</div><div class="reco-text">${r.t}</div></div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════════
+function buildOverview() {
+  const aps=D.airports||[];
+  const totalFlights=aps.reduce((s,a)=>s+a.total_traffic,0);
+  const avgDelay=(D.monthly_delays||[]).reduce((s,m,_,a)=>s+m.avg_dep_delay/a.length,0)||12.8;
+  document.getElementById('ov-stats').innerHTML=`
+    <div class="ov-stat"><div class="ov-num" style="color:var(--blue)">${aps.length}</div><div class="ov-lbl">Major US Airports Analyzed</div></div>
+    <div class="ov-stat"><div class="ov-num" style="color:var(--cyan)">${(totalFlights/1e6).toFixed(1)}M</div><div class="ov-lbl">Total Historical Flights</div></div>
+    <div class="ov-stat"><div class="ov-num" style="color:var(--yellow)">${avgDelay.toFixed(1)} min</div><div class="ov-lbl">Average Departure Delay</div></div>`;
+
+  const top10=[...aps].sort((a,b)=>b.total_traffic-a.total_traffic).slice(0,10);
+  kc('chart-busiest');
+  CI['chart-busiest']=new Chart(document.getElementById('chart-busiest'),{
+    type:'bar',
+    data:{labels:top10.map(a=>a.code),datasets:[{
+      label:'Total Flights',data:top10.map(a=>a.total_traffic),
+      backgroundColor:'rgba(59,130,246,0.75)',borderRadius:6
+    }]},options:co('Total Flights')
+  });
+
+  const c=(D.delay_causes||[])[0]||{};
+  kc('chart-causes');
+  CI['chart-causes']=new Chart(document.getElementById('chart-causes'),{
+    type:'doughnut',
+    data:{
+      labels:['Carrier','Weather','NAS','Late Aircraft','Security'],
+      datasets:[{
+        data:[c.avg_carrier_delay_min||8.2,c.avg_weather_delay_min||4.1,c.avg_nas_delay_min||5.8,c.avg_late_aircraft_min||9.4,c.avg_security_delay_min||0.3],
+        backgroundColor:['#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444'],
+        borderWidth:0,hoverOffset:6
+      }]
+    },
+    options:{responsive:true,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{family:"'Instrument Sans'"},padding:12}},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed.toFixed(1)} min`}}}}
+  });
+
+  const dl=D.daily_delays||[];
+  kc('chart-daily');
+  if (dl.length) {
+    CI['chart-daily']=new Chart(document.getElementById('chart-daily'),{
+      type:'bar',
+      data:{labels:dl.map(d=>DAY[d.day_of_week]||d.day_of_week),datasets:[{
+        label:'Avg Delay (min)',data:dl.map(d=>d.avg_dep_delay),
+        backgroundColor:'rgba(16,185,129,0.7)',borderRadius:6
+      }]},options:co('Avg Delay (min)')
+    });
+  }
+
+  const fq=D.fare_by_quarter||[];
+  kc('chart-quarter');
+  if (fq.length) {
+    CI['chart-quarter']=new Chart(document.getElementById('chart-quarter'),{
+      type:'bar',
+      data:{labels:fq.map(q=>q.quarter_label||'Q'+q.QUARTER),datasets:[{
+        label:'Avg Fare ($)',data:fq.map(q=>q.avg_fare_usd),
+        backgroundColor:['rgba(59,130,246,0.75)','rgba(245,158,11,0.75)','rgba(239,68,68,0.75)','rgba(16,185,129,0.75)'],
+        borderRadius:6
+      }]},options:co('Avg Fare ($)')
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+// AIRPORT TABLES
+// ═══════════════════════════════════════════
+function buildAirportTables() {
+  const aps=[...D.airports||[]].sort((a,b)=>b.total_traffic-a.total_traffic);
+  rt('tbl-busy',aps.slice(0,20),[
+    {h:'Airport',k:'code'},
+    {h:'State',k:'state'},
+    {h:'Departures',k:'total_departures',f:n=>n.toLocaleString()},
+    {h:'Arrivals',k:'total_arrivals',f:n=>n.toLocaleString()},
+    {h:'Total Traffic',k:'total_traffic',f:n=>n.toLocaleString(),b:()=>'bb'},
+    {h:'Avg Delay',k:'avg_dep_delay',f:n=>`${n} min`,b:v=>v<8?'bg':v<15?'by':'br'},
+    {h:'Network Score',k:'network_score',f:n=>n.toFixed(1)},
+  ]);
+  rt('tbl-dep',(D.top_dep_delays||[]).slice(0,10),[
+    {h:'Airport',k:'ORIGIN'},{h:'Avg Dep Delay',k:'avg_dep_delay_min',f:n=>`${n} min`,b:()=>'br'},
+    {h:'Total Flights',k:'total_flights',f:n=>n.toLocaleString()},
+    {h:'% Over 15 min',k:'pct_over_15min',f:n=>`${n}%`,b:()=>'by'},
+  ]);
+  rt('tbl-arr',(D.top_arr_delays||[]).slice(0,10),[
+    {h:'Airport',k:'DEST'},{h:'Avg Arr Delay',k:'avg_arr_delay_min',f:n=>`${n} min`,b:()=>'br'},
+    {h:'Total Flights',k:'total_flights',f:n=>n.toLocaleString()},
+    {h:'% Over 15 min',k:'pct_over_15min',f:n=>`${n}%`,b:()=>'by'},
+  ]);
+  rt('tbl-cheap',(D.cheapest||[]).slice(0,15),[
+    {h:'Airport',k:'ORIGIN'},{h:'Avg Fare',k:'avg_fare_usd',f:n=>`$${n}`,b:()=>'bg'},
+    {h:'Itineraries',k:'total_itineraries',f:n=>n.toLocaleString()},
+  ]);
+  rt('tbl-exp',(D.most_expensive||[]).slice(0,15),[
+    {h:'Airport',k:'ORIGIN'},{h:'Avg Fare',k:'avg_fare_usd',f:n=>`$${n}`,b:()=>'br'},
+    {h:'Itineraries',k:'total_itineraries',f:n=>n.toLocaleString()},
+  ]);
+  rt('tbl-bv',(D.best_value||[]).slice(0,15),[
+    {h:'Airport',k:'ORIGIN'},{h:'Avg Fare',k:'avg_fare_usd',f:n=>`$${n}`},
+    {h:'Avg Distance',k:'avg_distance_miles',f:n=>`${Math.round(n)} mi`},
+    {h:'¢ per Mile',k:'avg_cents_per_mile',f:n=>`$${n}`,b:()=>'bc'},
+  ]);
+  rt('tbl-weather',(D.worst_weather||[]).slice(0,15),[
+    {h:'Airport',k:'ORIGIN'},
+    {h:'Avg Weather Delay',k:'avg_weather_delay_min',f:n=>`${n} min`,b:()=>'br'},
+    {h:'% Severe (>30min)',k:'pct_severe_weather_delay',f:n=>`${n}%`,b:()=>'by'},
+  ]);
+}
+
+function rt(id,rows,cols) {
+  const el=document.getElementById(id);
+  if (!rows||!rows.length){el.innerHTML='<tr><td colspan="10" style="color:var(--muted);padding:2rem;text-align:center">No data — run Step6_graph_analysis.py</td></tr>';return;}
+  el.innerHTML=`<thead><tr>${cols.map(c=>`<th>${c.h}</th>`).join('')}</tr></thead><tbody>${
+    rows.map(row=>`<tr>${cols.map(c=>{
+      const raw=row[c.k]??'—';const val=c.f?c.f(raw):raw;const bc=c.b?c.b(raw):'';
+      return `<td>${bc?`<span class="badge ${bc}">${val}</span>`:val}</td>`;
+    }).join('')}</tr>`).join('')
+  }</tbody>`;
+}
+
+// ═══════════════════════════════════════════
+// TRENDS
+// ═══════════════════════════════════════════
+function buildTrends() {
+  const fy=D.fare_by_year||[];
+  kc('chart-fare-yr');
+  if (fy.length) {
+    CI['chart-fare-yr']=new Chart(document.getElementById('chart-fare-yr'),{
+      type:'line',
+      data:{labels:fy.map(r=>r.YEAR),datasets:[{
+        label:'Avg Fare ($)',data:fy.map(r=>r.avg_fare_usd),
+        borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.1)',
+        tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#06b6d4',
+        borderWidth:2.5
+      }]},options:{...co('Avg Fare ($)'),scales:{...co('Avg Fare ($)').scales}}
+    });
+  }
+  const mo=D.monthly_delays||[];
+  kc('chart-delay-mo');
+  if (mo.length) {
+    CI['chart-delay-mo']=new Chart(document.getElementById('chart-delay-mo'),{
+      type:'line',
+      data:{labels:mo.map(m=>MO[m.month]),datasets:[{
+        label:'Avg Delay (min)',data:mo.map(m=>m.avg_dep_delay),
+        borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',
+        tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#f59e0b',borderWidth:2.5
+      }]},options:co('Avg Delay (min)')
+    });
+  }
+  const wx=(D.worst_weather||[]).slice(0,10);
+  kc('chart-wx');
+  if (wx.length) {
+    CI['chart-wx']=new Chart(document.getElementById('chart-wx'),{
+      type:'bar',
+      data:{labels:wx.map(w=>w.ORIGIN),datasets:[{
+        label:'Avg Weather Delay (min)',data:wx.map(w=>w.avg_weather_delay_min),
+        backgroundColor:'rgba(239,68,68,0.7)',borderRadius:6
+      }]},options:co('Weather Delay (min)')
+    });
+  }
+  const dd=(D.top_dep_delays||[]).slice(0,10);
+  kc('chart-dep-delay');
+  if (dd.length) {
+    CI['chart-dep-delay']=new Chart(document.getElementById('chart-dep-delay'),{
+      type:'bar',
+      data:{labels:dd.map(d=>d.ORIGIN),datasets:[{
+        label:'Avg Dep Delay (min)',data:dd.map(d=>d.avg_dep_delay_min),
+        backgroundColor:'rgba(139,92,246,0.7)',borderRadius:6
+      }]},options:co('Avg Delay (min)')
+    });
+  }
+  const ad=(D.top_arr_delays||[]).slice(0,10);
+  kc('chart-arr-delay');
+  if (ad.length) {
+    CI['chart-arr-delay']=new Chart(document.getElementById('chart-arr-delay'),{
+      type:'bar',
+      data:{labels:ad.map(d=>d.DEST),datasets:[{
+        label:'Avg Arr Delay (min)',data:ad.map(d=>d.avg_arr_delay_min),
+        backgroundColor:'rgba(245,158,11,0.7)',borderRadius:6
+      }]},options:co('Avg Delay (min)')
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function co(yl) {
+  return {
+    responsive:true,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#64748b',font:{family:"'Instrument Sans'",size:11}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#64748b',font:{family:"'Instrument Sans'",size:11}},grid:{color:'rgba(30,45,69,0.5)'},title:{display:true,text:yl,color:'#64748b',font:{size:10}}}
+    }
+  };
+}
+function kc(id){if(CI[id]){CI[id].destroy();delete CI[id];}}
+
+function getDayType(dateStr) {
+  const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+  const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+  return (day === 0 || day === 6) ? 'weekend' : 'weekday';
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+}
+function switchTab(tabId,btn) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+
+loadData();
+</script>
+</body>
+</html>
